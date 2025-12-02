@@ -1,0 +1,275 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body, #root { height: 100%; }
+
+body {
+  background: #000;
+  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.stage {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+}
+
+/* center big button */
+.center-play {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+}
+
+/* base button styles */
+.play-btn {
+  background: #8b1717;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: 0 6px 22px rgba(139,23,23,0.14), inset 0 -3px 0 rgba(0,0,0,0.06);
+  transition: transform 140ms ease, filter 140ms ease, opacity 200ms ease;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto; /* ensure buttons accept pointer events */
+}
+
+/* large center variant */
+.play-btn.large {
+  padding: 18px 46px;
+  font-size: 28px;
+  border-radius: 14px;
+  box-shadow: 0 14px 40px rgba(225,29,29,0.22), inset 0 -5px 0 rgba(0,0,0,0.08);
+}
+
+/* small scattered buttons */
+.play-btn.small {
+  padding: 0 10px;
+  font-size: 12px;
+  border-radius: 8px;
+  opacity: 0.95;
+  transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
+}
+
+/* hover — visible when mouse over */
+.play-btn.small:hover {
+  transform: translateY(-6px) scale(1.06) rotate(0deg);
+  filter: brightness(1.06);
+  opacity: 1;
+  box-shadow: 0 10px 26px rgba(139,23,23,0.2);
+  cursor: pointer; /* pointer cursor on hover */
+}
+
+/* focus accessibility */
+.play-btn.small:focus {
+  outline: 2px solid rgba(255,255,255,0.12);
+  outline-offset: 3px;
+}
+
+/* clicked pulse (tiny scale) toggled via data attribute from JS */
+.play-btn.small[data-clicked="1"] {
+  transform: scale(0.95) translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+}
+
+/* random layer */
+.random-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+}
+
+/* blank screen after center click */
+.blank-screen {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+}
+
+/* small-screen tweak */
+@media (max-width: 420px) {
+  .play-btn.large { top: 62%; font-size: 20px; padding: 14px 30px; }
+}
+
+/* NEXT PAGE (FREE / PAID CARDS) */
+.next-screen {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.card-container {
+  display: flex;
+  gap: 10px;
+}
+
+.card {
+  width: 300px;
+  height: 120px;
+  padding: 26px;
+  border: 2px solid white; /* white border */
+  border-radius: 12px;
+  text-align: center;
+  color: white;
+}
+
+.card-title {
+  font-size: 26px;
+  margin-bottom: 20px;
+}
+
+.card-btn {
+  background: #a72626;
+  color: white;
+  border: 50px ;
+  padding: 12px 24px;
+  font-size: 30px;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-bottom: 14px;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.card-btn:hover {
+  transform: scale(1.05);
+  filter: brightness(1.1);
+}
+
+.card-description {
+  font-size: 13px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+/* ---------------------------
+   FREE SCREEN (floating texts)
+   --------------------------- */
+
+.free-screen {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  position: relative;
+  overflow: hidden;
+}
+
+/* container that holds DOM nodes for floating texts */
+.free-float-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none; /* text floats should not block clicks */
+}
+
+/* floating text style */
+.float-text {
+  color: #fff;
+  background: rgba(255,255,255,0.03); /* subtle backdrop */
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: left top;
+  transition: transform 120ms linear;
+  opacity: 0.95;
+}
+
+/* bottom center Let's Go button */
+.free-bottom {
+  position: absolute;
+  left: 50%;
+  bottom: 36px;
+  transform: translateX(-50%);
+  z-index: 60;
+}
+
+/* base style already exists; ensure this is present or appended */
+
+.letsgo-btn {
+  background: #c01616;
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  font-size: 18px;
+  font-weight: 700;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 12px 30px rgba(192,22,22,0.22), inset 0 -4px 0 rgba(0,0,0,0.08);
+  transition: transform 140ms ease, filter 140ms ease, opacity 360ms ease, transform 360ms ease;
+  opacity: 0;
+  transform: translateY(12px) scale(0.98);
+  pointer-events: none;
+}
+
+/* visible state: fades up and becomes clickable */
+.letsgo-btn.show {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+/* hover when visible */
+.letsgo-btn.show:hover {
+  transform: translateY(-4px) scale(1.03);
+  filter: brightness(1.06);
+}
+
+/* ---------------------------
+   PAID SCREEN (simple)
+   --------------------------- */
+.paid-screen {
+  width: 100vw;
+  height: 100vh;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.paid-center .card-btn {
+  background: #c01616;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  border: none;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* small responsive tweaks */
+@media (max-width: 520px) {
+  .float-text { font-size: 14px !important; padding: 6px 8px; }
+  .letsgo-btn { padding: 10px 20px; font-size: 16px; }
+  .card { width: 200px; padding: 18px; }
+}
+
+/* When floats align we rely on JS to place them.
+   These rules just ensure the visuals look clean. */
+
+.float-text {
+  color: #fff;
+  background: rgba(255,255,255,0.03);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+  white-space: nowrap;
+  pointer-events: none;
+  user-select: none;
+  transform-origin: left top;
+  transition: transform 160ms linear; /* small smoothing for direct DOM transform changes */
+  opacity: 0.98;
+}
