@@ -1,358 +1,355 @@
 import React, { useEffect, useState, useRef } from 'react'
 
-const BUTTON_COUNT = 500
+const MAX_PROMPTS = 10
 
-function randomBetween(min, max) {
-  return Math.random() * (max - min) + min
-}
+// timing presets (label, seconds)
+const TIMING_PRESETS = [
+  { id: '6',   label: '6s',   name: 'Micro',   seconds: 6 },
+  { id: '15',  label: '15s',  name: 'Reel',    seconds: 15 },
+  { id: '30',  label: '30s',  name: 'Clip',    seconds: 30 },
+  { id: '60',  label: '60s',  name: 'Short',   seconds: 60 },
+  { id: '120', label: '120s', name: 'Long',    seconds: 120 },
+  { id: '300', label: '300s', name: 'Epic',    seconds: 300 }
+]
 
 export default function App() {
-  const [buttons, setButtons] = useState([])
-  const [screen, setScreen] = useState('home') // 'home' | 'cards' | 'free' | 'paid'
-  const resizeTid = useRef(null)
+  // nav / routing
+  const [screen, setScreen] = useState('home') // home | cards | create | paid
 
-  const generateRandomButtons = () => {
-    const w = window.innerWidth
-    const h = window.innerHeight
+  // CREATE screen core
+  const [remaining, setRemaining] = useState(MAX_PROMPTS)
+  const [bookName, setBookName] = useState('')
+  const [results, setResults] = useState([])
 
-    const arr = Array.from({ length: BUTTON_COUNT }).map((_, i) => {
-      const width = Math.round(randomBetween(70, 180))
-      const height = Math.round(randomBetween(28, 56))
-      const left = Math.round(randomBetween(6, Math.max(6, w - width - 6)))
-      const top = Math.round(randomBetween(6, Math.max(6, h - height - 6)))
-      const rotate = Math.round(randomBetween(-18, 18))
-      const opacity = Number(randomBetween(0.6, 1).toFixed(2))
-      const scale = Number(randomBetween(0.85, 1.12).toFixed(2))
+  // Edit options (Card B)
+  const [videoQuality, setVideoQuality] = useState('1080p')
+  const [audioQuality, setAudioQuality] = useState('Standard')
+  const [lengthSec, setLengthSec] = useState(30) // default to 30s
+  const [format, setFormat] = useState('MP4')
+  const [captions, setCaptions] = useState(true)
+  const [cinematicGrade, setCinematicGrade] = useState(true)
 
-      return {
-        id: `btn-${i}-${Date.now()}`,
-        left,
-        top,
-        width,
-        height,
-        rotate,
-        opacity,
-        scale
-      }
-    })
+  // nav / dropdown
+  const [navOpen, setNavOpen] = useState(false)
+  const [showHistoryInDropdown, setShowHistoryInDropdown] = useState(false)
+  const navRef = useRef(null)
 
-    setButtons(arr)
-  }
-
+  // neon brand entrance
+  const [entered, setEntered] = useState(false)
   useEffect(() => {
-    generateRandomButtons()
-
-    const onResize = () => {
-      if (resizeTid.current) clearTimeout(resizeTid.current)
-      resizeTid.current = setTimeout(() => {
-        generateRandomButtons()
-        resizeTid.current = null
-      }, 120)
+    if (screen === 'create') {
+      const t = setTimeout(() => setEntered(true), 160)
+      return () => clearTimeout(t)
+    } else {
+      setEntered(false)
     }
+  }, [screen])
 
-    window.addEventListener('resize', onResize)
-    window.addEventListener('orientationchange', onResize)
-
+  // close dropdown when clicking outside or Escape
+  useEffect(() => {
+    function onDocClick(e) {
+      if (navRef.current && !navRef.current.contains(e.target)) {
+        setNavOpen(false)
+        setShowHistoryInDropdown(false)
+      }
+    }
+    function onKey(e) {
+      if (e.key === 'Escape') {
+        setNavOpen(false)
+        setShowHistoryInDropdown(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocClick)
+    document.addEventListener('keydown', onKey)
     return () => {
-      window.removeEventListener('resize', onResize)
-      window.removeEventListener('orientationchange', onResize)
-      if (resizeTid.current) clearTimeout(resizeTid.current)
+      document.removeEventListener('mousedown', onDocClick)
+      document.removeEventListener('keydown', onKey)
     }
   }, [])
 
-  // NAV
+  // navigation handlers
   const goToCards = () => setScreen('cards')
-  const onClickFree = () => setScreen('free')
-  const onClickPaid = () => setScreen('paid')
-
-  const handleRandomClick = (id, e) => {
-    e.stopPropagation()
-    console.log('Random button clicked:', id)
-    const el = e.currentTarget
-    el.dataset.clicked = '1'
-    setTimeout(() => { el.dataset.clicked = '0' }, 140)
+  const goToCreate = () => {
+    setBookName('')
+    setResults([])
+    setRemaining(MAX_PROMPTS)
+    setScreen('create')
   }
+  const goToPaid = () => setScreen('paid')
 
-  // FREE screen animation refs
-  const floatContainerRef = useRef(null)
-  const floatsRef = useRef([]) // mutable array of float items
-  const animationRef = useRef(null)
-  const alignProgressRef = useRef(0) // stable ref for RAF loop
-  const [showLetsGo, setShowLetsGo] = useState(false) // show button only after alignment complete
+  // generate handler
+  const handleGenerate = () => {
+    if (!bookName.trim()) return
+    if (remaining <= 0) return
 
-  useEffect(() => {
-    // only initialize when entering free screen
-    if (screen !== 'free') return
-
-    // texts (you replaced them with poem lines — kept as-is)
-    const texts = [
-      'If Vodka were water, and i were a duck;',
-      'I would swim under water and never come up;',
-      'But Vodka is not water, and I am not a duck;',
-      'So hand me the bottle and shut the fuck up!'
-    ]
-
-    // initialize floats
-    const W = window.innerWidth
-    const H = window.innerHeight
-    const items = texts.map((t, i) => ({
-      id: `float-${i}-${Date.now()}`,
-      text: t,
-      x: randomBetween(40, Math.max(40, W - 200)),
-      y: randomBetween(40, Math.max(40, H - 120)),
-      vx: randomBetween(-0.6, 0.6),
-      vy: randomBetween(-0.45, 0.45),
-      size: Math.round(randomBetween(18, 32)),
-    }))
-    floatsRef.current = items
-
-    // reset progress & button
-    alignProgressRef.current = 0
-    setShowLetsGo(false)
-
-    // timing
-    const driftStart = 3500
-    const driftEnd = 5000
-    let startTime = performance.now()
-
-    // compute targets for current viewport
-    function computeTargets() {
-      const nodes = floatContainerRef.current?.children || []
-      const W2 = window.innerWidth
-      const H2 = window.innerHeight
-      const targets = []
-
-      floatsRef.current.forEach((it, idx) => {
-        const node = nodes[idx]
-        const nodeW = node ? node.offsetWidth : 180
-        const nodeH = node ? node.offsetHeight : 32
-        const gap = Math.max(46, nodeH + 10)
-        const totalH = floatsRef.current.length * gap
-        const startY = Math.round(H2 / 2 - totalH / 2)
-        const targetX = Math.round(W2 / 2 - nodeW / 2)
-        const targetY = startY + idx * gap
-        targets.push({ targetX, targetY })
-      })
-
-      return targets
-    }
-
-    // apply final positions when fully aligned or on resize after alignment
-    function applyFinalPositions() {
-      const nodes = floatContainerRef.current?.children || []
-      const targets = computeTargets()
-      targets.forEach((t, idx) => {
-        const node = nodes[idx]
-        if (node) {
-          node.style.transform = `translate(${Math.round(t.targetX)}px, ${Math.round(t.targetY)}px)`
-        }
-        const it = floatsRef.current[idx]
-        if (it) {
-          it.x = t.targetX
-          it.y = t.targetY
-          it.vx = 0
-          it.vy = 0
-        }
-      })
-    }
-
-    // resize handler — if already aligned, re-center
-    const onResizeDuringFree = () => {
-      if (alignProgressRef.current >= 1) {
-        // small delay to allow layout reflow
-        setTimeout(() => applyFinalPositions(), 30)
+    const entry = {
+      id: `r-${Date.now()}`,
+      prompt: bookName.trim(),
+      time: new Date().toLocaleTimeString(),
+      options: {
+        videoQuality,
+        audioQuality,
+        lengthSec,
+        format,
+        captions,
+        cinematicGrade
       }
     }
 
-    // main animation loop
-    const tick = (now) => {
-      const elapsed = now - startTime
-
-      // update align progress (ref only)
-      if (elapsed >= driftStart) {
-        const p = Math.min((elapsed - driftStart) / (driftEnd - driftStart), 1)
-        alignProgressRef.current = p
-        if (p >= 1) {
-          // reveal Let's Go once (calling setState repeatedly is fine — React handles it)
-          setShowLetsGo(true)
-        }
-      }
-
-      const nodes = floatContainerRef.current?.children || []
-      const W2 = window.innerWidth
-      const H2 = window.innerHeight
-
-      // compute targets for consistent positions this frame
-      const targets = computeTargets()
-
-      floatsRef.current.forEach((it, idx) => {
-        const ease = alignProgressRef.current // 0..1, from ref
-
-        // free-floating when not fully aligned
-        if (ease < 1) {
-          it.x += it.vx
-          it.y += it.vy
-
-          const pad = 20
-          if (it.x < pad) { it.x = pad; it.vx *= -1 }
-          if (it.y < pad) { it.y = pad; it.vy *= -1 }
-          if (it.x > W2 - pad - 200) { it.x = W2 - pad - 200; it.vx *= -1 }
-          if (it.y > H2 - pad - 60) { it.y = H2 - pad - 60; it.vy *= -1 }
-        }
-
-        const target = targets[idx] || { targetX: it.x, targetY: it.y }
-        // lerp between current (it.x/it.y) and target by ease
-        const x = it.x * (1 - ease) + target.targetX * ease
-        const y = it.y * (1 - ease) + target.targetY * ease
-
-        const node = nodes[idx]
-        if (node) {
-          node.style.transform = `translate(${Math.round(x)}px, ${Math.round(y)}px)`
-        }
-
-        // when almost finished, lock model positions
-        if (ease >= 0.995) {
-          it.x = target.targetX
-          it.y = target.targetY
-          it.vx = 0
-          it.vy = 0
-        }
-      })
-
-      animationRef.current = requestAnimationFrame(tick)
-    }
-
-    animationRef.current = requestAnimationFrame(tick)
-    window.addEventListener('resize', onResizeDuringFree)
-
-    // cleanup when leaving free screen
-    return () => {
-      if (animationRef.current) cancelAnimationFrame(animationRef.current)
-      animationRef.current = null
-      floatsRef.current = []
-      window.removeEventListener('resize', onResizeDuringFree)
-      setShowLetsGo(false)
-    }
-  }, [screen]) // only re-run when screen changes
-
-  // RENDER
-  if (screen === 'home') {
-    return (
-      <main className="stage random-stage">
-        <div className="center-play">
-          <button className="play-btn large" onClick={() => setScreen('cards')}>
-            <span className="btn-text">Let&apos;s Play</span>
-          </button>
-        </div>
-
-        <div className="random-layer">
-          {buttons.map(b => (
-            <button
-              key={b.id}
-              className="play-btn small"
-              style={{
-                position: 'absolute',
-                left: b.left,
-                top: b.top,
-                width: b.width,
-                height: b.height,
-                transform: `rotate(${b.rotate}deg) scale(${b.scale})`,
-                opacity: b.opacity,
-                zIndex: 5
-              }}
-              onClick={(e) => handleRandomClick(b.id, e)}
-            >
-              <span className="btn-text" style={{ fontSize: Math.max(10, Math.round(b.height * 0.45)) }}>
-                Let&apos;s Play
-              </span>
-            </button>
-          ))}
-        </div>
-      </main>
-    )
+    setResults(prev => [entry, ...prev])
+    setRemaining(r => Math.max(0, r - 1))
+    setBookName('')
   }
 
-  if (screen === 'cards') {
-    return (
-      <div className="next-screen">
-        <div className="card-container">
-          <div className="card">
-            <h2 className="card-title">FREE</h2>
-            <button className="card-btn" onClick={onClickFree}>FREE</button>
-            <p className="card-description">
-              This is the free version with limited features.
-            </p>
-          </div>
+  const goBackFromCreate = () => setScreen('cards')
 
-          <div className="card">
-            <h2 className="card-title">PAID</h2>
-            <button className="card-btn" onClick={onClickPaid}>PAID</button>
-            <p className="card-description">
-              Unlock all premium features with the paid plan.
-            </p>
-          </div>
-        </div>
-      </div>
-    )
+  // NAV actions
+  const onHistoryClick = () => setShowHistoryInDropdown(s => !s)
+  const onSettingsClick = () => { setNavOpen(false); setShowHistoryInDropdown(false); alert('Settings placeholder') }
+  const onSubscriptionClick = () => { setScreen('paid'); setNavOpen(false); setShowHistoryInDropdown(false) }
+
+  // chosen preset helper
+  const handlePresetClick = (seconds) => {
+    setLengthSec(seconds)
   }
 
-  if (screen === 'free') {
-    return (
-      <div className="free-screen">
-        <div className="free-float-container" ref={floatContainerRef} aria-hidden="false">
-          {floatsRef.current.length > 0
-            ? floatsRef.current.map(it => (
-                <div
-                  key={it.id}
-                  className="float-text"
-                  style={{
-                    position: 'absolute',
-                    left: 0,
-                    top: 0,
-                    fontSize: `${it.size}px`,
-                    transform: `translate(${Math.round(it.x)}px,${Math.round(it.y)}px)`
-                  }}
-                >
-                  {it.text}
-                </div>
-              ))
-            : (
-              ['If Vodka were water and i were a duck','I would swim under water and never come up','But vodka is not water and i am not a duck','So hand me the bottle and shut the fuck up'].map((t,i) => (
-                <div key={`ph-${i}`} className="float-text" style={{ position: 'absolute', left: 20 + i*30, top: 80 + i*40 }}>
-                  {t}
-                </div>
-              ))
-            )
-          }
+  // render nav (only on create screen)
+  const renderNav = () => (
+    <header className={`top-nav ${screen === 'create' ? 'large' : ''}`} role="banner">
+      <div className="nav-inner">
+        <div className="nav-left" />
+        <div className={`brand neon ${entered ? 'show' : ''}`} aria-hidden="true">
+          <span className="letter v" data-char="V">V</span>
+          <span className="letter b" data-char="B">B</span>
+          <span className="letter o-small" data-char="O">O</span>
+          <span className="letter o-mid" data-char="O">O</span>
+          <span className="letter k" data-char="K">K</span>
         </div>
 
-        <div className="free-bottom">
+        <div className="nav-right" ref={navRef}>
           <button
-            className={`letsgo-btn ${showLetsGo ? 'show' : ''}`}
-            onClick={() => console.log("Let's go clicked (free)")}
-            aria-hidden={!showLetsGo}
-            disabled={!showLetsGo}
+            className="profile-btn"
+            aria-haspopup="true"
+            aria-expanded={navOpen}
+            onClick={() => setNavOpen(v => !v)}
+            title="Profile"
           >
-            Let&apos;s Go
+            <div className="avatar"><span className="avatar-initials">VK</span></div>
           </button>
+
+          {navOpen && (
+            <div className="profile-dropdown" role="menu" aria-label="Profile menu">
+              <div className="profile-header">
+                <div className="header-avatar"><div className="avatar avatar-lg"><span className="avatar-initials">VK</span></div></div>
+                <div className="header-meta">
+                  <div className="header-name">You</div>
+                  <div className="header-sub">vbook@local</div>
+                </div>
+              </div>
+
+              <div className="dropdown-items">
+                <button className="drop-item" onClick={onHistoryClick}><span className="icon">🕘</span> History</button>
+                <button className="drop-item" onClick={onSettingsClick}><span className="icon">⚙️</span> Settings</button>
+                <button className="drop-item" onClick={onSubscriptionClick}><span className="icon">💳</span> Subscription</button>
+              </div>
+
+              {showHistoryInDropdown && (
+                <div className="history-list" role="region" aria-label="Prompt history">
+                  {results.length === 0 ? (
+                    <div className="history-empty">No history yet</div>
+                  ) : (
+                    results.map(r => (
+                      <div key={r.id} className="history-row">
+                        <div className="history-time">{r.time}</div>
+                        <div className="history-text">{r.prompt}</div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
-    )
-  }
+    </header>
+  )
 
-  if (screen === 'paid') {
-    return (
-      <div className="paid-screen">
-        <div className="paid-center">
-          <h2 style={{ color: 'white', marginBottom: 18 }}>PAID PLAN</h2>
-          <p style={{ color: 'white', opacity: 0.9, marginBottom: 24 }}>Paid flow — unlock everything.</p>
-          <button className="card-btn" onClick={() => console.log('Paid continue')}>
-            Proceed
-          </button>
+  // main render
+  return (
+    <div className="app-shell">
+      {screen === 'create' && renderNav()}
+
+      {/* HOME */}
+      {screen === 'home' && (
+        <main className="stage home-stage">
+          <div className="center-play">
+            <button className="play-btn large" onClick={goToCards}>Let's Play</button>
+          </div>
+        </main>
+      )}
+
+      {/* CARDS */}
+      {screen === 'cards' && (
+        <div className="next-screen">
+          <div className="card-container">
+            <div className="card">
+              <h2 className="card-title">FREE</h2>
+              <button className="card-btn free-btn" onClick={goToCreate}>FREE</button>
+              <p className="card-description">Free: Create with default options (limited prompts).</p>
+            </div>
+
+            <div className="card">
+              <h2 className="card-title">PAID</h2>
+              <button className="card-btn paid-btn" onClick={() => setScreen('paid')}>PAID</button>
+              <p className="card-description">Paid: unlock more prompts and higher quality exports.</p>
+            </div>
+          </div>
         </div>
-      </div>
-    )
-  }
+      )}
 
-  return null
+      {/* CREATE */}
+      {screen === 'create' && (
+        <div className="create-screen with-nav">
+          <div className="create-inner two-column">
+            {/* Card A */}
+            <div className="card card-a">
+              <div className="card-a-header">
+                <label className="label">Input your book name</label>
+                <div className="remaining">Remaining: <strong>{remaining}</strong></div>
+              </div>
+
+              <textarea
+                className="input-bookname"
+                placeholder="Type book name here..."
+                value={bookName}
+                onChange={(e) => setBookName(e.target.value)}
+                rows={3}
+                maxLength={200}
+              />
+
+              <div style={{ marginTop: 12 }}>
+                <button
+                  className="card-btn generate-btn"
+                  onClick={handleGenerate}
+                  disabled={!bookName.trim() || remaining <= 0}
+                >
+                  Generate
+                </button>
+                <button className="ghost-btn small" style={{ marginLeft: 10 }} onClick={() => setBookName('')}>Reset</button>
+              </div>
+            </div>
+
+            {/* Card B: Edit Options */}
+            <div className="card card-b">
+              <h3 className="card-b-title">Edit Options</h3>
+
+              <div className="control-row">
+                <label>Video quality</label>
+                <select value={videoQuality} onChange={(e) => setVideoQuality(e.target.value)} className="control-select">
+                  <option value="480p">480p (Low)</option>
+                  <option value="720p">720p (SD)</option>
+                  <option value="1080p">1080p (HD)</option>
+                  <option value="4k">4K (Ultra)</option>
+                </select>
+              </div>
+
+              <div className="control-row">
+                <label>Audio quality</label>
+                <select value={audioQuality} onChange={(e) => setAudioQuality(e.target.value)} className="control-select">
+                  <option>Low</option>
+                  <option>Standard</option>
+                  <option>High</option>
+                </select>
+              </div>
+
+              {/* NEW: discrete timing presets */}
+              <div className="control-row">
+                <label>Length (preset)</label>
+                <div className="timing-presets" role="tablist" aria-label="Timing presets">
+                  {TIMING_PRESETS.map(p => {
+                    const active = lengthSec === p.seconds
+                    return (
+                      <button
+                        key={p.id}
+                        className={`preset-btn ${active ? 'active' : ''}`}
+                        onClick={() => handlePresetClick(p.seconds)}
+                        aria-pressed={active}
+                        title={`${p.label} — ${p.name}`}
+                      >
+                        <div className="preset-label">{p.label}</div>
+                        <div className="preset-sub">{p.name}</div>
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="control-row">
+                <label>Format</label>
+                <select value={format} onChange={(e) => setFormat(e.target.value)} className="control-select">
+                  <option>MP4</option>
+                  <option>WEBM</option>
+                  <option>MOV</option>
+                </select>
+              </div>
+
+              <div className="control-row checkbox-row">
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={captions} onChange={(e) => setCaptions(e.target.checked)} />
+                  <span>Include captions</span>
+                </label>
+              </div>
+
+              <div className="control-row checkbox-row">
+                <label className="checkbox-label">
+                  <input type="checkbox" checked={cinematicGrade} onChange={(e) => setCinematicGrade(e.target.checked)} />
+                  <span>Use cinematic color grade</span>
+                </label>
+              </div>
+
+              <div style={{ marginTop: 8, color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>
+                Tip: choose a timing preset to match the platform you target.
+              </div>
+            </div>
+
+            {/* Results area below */}
+            <div className="results-panel" style={{ gridColumn: '1 / -1' }}>
+              <div style={{ marginTop: 18 }}>
+                <h4 style={{ margin: '8px 0 10px' }}>Generations</h4>
+                {results.length === 0 ? (
+                  <div className="muted">No generations yet — your generated items will appear here.</div>
+                ) : (
+                  results.map(r => (
+                    <div key={r.id} className="result-card">
+                      <div className="result-meta">{r.time}</div>
+                      <div className="result-text">{r.prompt}</div>
+                      <div className="result-options">
+                        <small>Video: {r.options.videoQuality} • Audio: {r.options.audioQuality} • {r.options.lengthSec}s • {r.options.format}</small>
+                        <div style={{ fontSize: 13, marginTop: 6 }}>
+                          {r.options.captions ? 'Captions • ' : ''}{r.options.cinematicGrade ? 'Cinematic Grade' : ''}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* PAID */}
+      {screen === 'paid' && (
+        <div className="paid-screen">
+          <div className="paid-center">
+            <h2 style={{ color: 'white', marginBottom: 18 }}>PAID PLAN</h2>
+            <p style={{ color: 'white', opacity: 0.9, marginBottom: 24 }}>Paid flow — unlock everything.</p>
+            <button className="card-btn" onClick={() => { setRemaining(MAX_PROMPTS); setScreen('create') }}>
+              Purchase (demo)
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
 }

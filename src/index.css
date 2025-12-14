@@ -1,275 +1,161 @@
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body, #root { height: 100%; }
+/* ===========================
+   VBook - Create screen with timing presets
+   =========================== */
 
-body {
-  background: #000;
-  font-family: Inter, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+:root{
+  --bg:#000;
+  --nav-red-1:#7a0f0f;
+  --nav-red-2:#5f0b0b;
+  --accent-red:#c01616;
+  --muted: rgba(255,255,255,0.7);
+  --muted-2: rgba(255,255,255,0.45);
+  --panel: rgba(255,255,255,0.02);
 }
 
-.stage {
-  min-height: 100vh;
-  position: relative;
-  overflow: hidden;
-}
+*{box-sizing:border-box}
+html,body,#root{height:100%}
+body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;background:var(--bg);color:#fff}
+.app-shell{padding-top:100px}
 
-/* center big button */
-.center-play {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  z-index: 50;
-}
+/* NAV */
+.top-nav{position:fixed;left:0;right:0;top:0;height:88px;background:linear-gradient(180deg,var(--nav-red-1) 0%,var(--nav-red-2) 100%);z-index:120;display:flex;align-items:center;box-shadow:0 6px 20px rgba(0,0,0,0.35)}
+.top-nav.large{height:100px}
+.nav-inner{position:relative;width:100%;max-width:1200px;margin:0 auto;display:flex;align-items:center;padding:12px 20px}
+.nav-left{flex:1}
+.nav-right{display:flex;align-items:center;margin-left:auto;position:relative}
+.profile-btn{background:transparent;border:none;cursor:pointer;padding:6px;border-radius:8px}
+.avatar{width:36px;height:36px;border-radius:8px;background:linear-gradient(180deg,#fff2,#fff0);display:flex;align-items:center;justify-content:center;color:#111;font-weight:800}
 
-/* base button styles */
-.play-btn {
-  background: #8b1717;
+/* brand */
+.brand{position:absolute;left:50%;transform:translateX(-50%);display:flex;align-items:baseline;gap:6px;pointer-events:none;user-select:none;height:100%}
+.brand .letter{position:relative;font-weight:900;color:#fff;text-shadow:0 0 4px #fff,0 0 10px #ff1f1f,0 0 18px #1fa0ff;opacity:0;transform:translateY(-18px) scale(0.95);transition:transform 520ms cubic-bezier(.2,.9,.3,1),opacity 360ms ease;line-height:1;display:inline-block}
+.brand .letter::before,.brand .letter::after{content:attr(data-char);position:absolute;left:0;top:0;opacity:0.72;mix-blend-mode:screen;pointer-events:none;filter:blur(2px)}
+.brand .letter::before{color:#ff2b2b;transform:translateX(-2px)}
+.brand .letter::after{color:#1f9eff;transform:translateX(2px)}
+.brand .v{font-size:56px}
+.brand .b{font-size:36px;transform:translateY(4px)}
+.brand .o-small{font-size:22px;transform:translateY(8px)}
+.brand .o-mid{font-size:36px;transform:translateY(4px)}
+.brand .k{font-size:56px}
+.brand.show .letter{opacity:1;transform:translateY(0) scale(1)}
+@keyframes glitchShift{0%{transform:translateX(0)}25%{transform:translateX(-1px)}50%{transform:translateX(1px)}75%{transform:translateX(-1px)}100%{transform:translateX(0)}}
+.brand.show .letter::before,.brand.show .letter::after{animation:glitchShift 1.6s infinite ease-in-out}
+
+/* profile dropdown */
+.profile-dropdown{position:absolute;top:52px;right:0;width:300px;background:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(255,255,255,0.02));border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:10px;box-shadow:0 16px 50px rgba(0,0,0,0.6);backdrop-filter:blur(6px);z-index:130}
+.profile-header{display:flex;gap:12px;align-items:center;padding:8px 6px;border-bottom:1px solid rgba(255,255,255,0.03);margin-bottom:8px}
+.header-avatar .avatar-lg{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg,#fff,#fff3);color:#111;font-weight:900}
+.header-meta .header-name{color:#fff;font-weight:800}
+.header-meta .header-sub{color:rgba(255,255,255,0.7);font-size:13px}
+.dropdown-items{display:flex;flex-direction:column;gap:6px;margin-bottom:8px}
+.drop-item{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;background:transparent;color:#fff;border:none;cursor:pointer;font-weight:700;text-align:left}
+.drop-item:hover{background:rgba(255,255,255,0.02)}
+.history-list{max-height:160px;overflow:auto;padding-top:8px;border-top:1px solid rgba(255,255,255,0.02)}
+.history-row{display:flex;gap:8px;align-items:flex-start;padding:8px;border-radius:8px;background:rgba(255,255,255,0.01);margin-bottom:6px}
+.history-time{color:rgba(255,255,255,0.45);font-size:11px;width:70px;flex-shrink:0}
+.history-text{color:#fff;font-size:13px;line-height:1.2;overflow:hidden;text-overflow:ellipsis}
+
+/* HOME center button */
+.stage.home-stage{width:100vw;height:calc(100vh - 100px);display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.center-play{z-index:40}
+.play-btn{border:none;cursor:pointer;background:#8f1b1b;color:#fff;border-radius:14px;padding:18px 36px;font-weight:800;letter-spacing:0.6px;box-shadow:0 20px 40px rgba(192,22,22,0.18),inset 0 -4px 0 rgba(0,0,0,0.08)}
+.play-btn.large{font-size:36px;padding:22px 44px}
+
+/* CARDS screen (cards list) */
+.next-screen{width:100vw;height:calc(100vh - 100px);display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.card-container{display:flex;gap:22px;align-items:center;justify-content:center;padding:20px}
+.card{background:var(--panel);border:1px solid rgba(255,255,255,0.04);padding:26px;border-radius:12px;width:320px;text-align:center;transition:transform 200ms ease,box-shadow 200ms ease}
+.card:hover{transform:translateY(-6px);box-shadow:0 20px 60px rgba(0,0,0,0.6)}
+.card-title{color:#fff;margin:6px 0 12px;font-size:20px;letter-spacing:1px}
+.card-description{color:rgba(255,255,255,0.8);font-size:14px;margin-top:10px}
+.card-btn{background:var(--accent-red);color:#fff;border:none;padding:10px 18px;border-radius:10px;font-weight:800;cursor:pointer;transition:transform 160ms ease,box-shadow 160ms ease,filter 160ms ease}
+.card-btn.free-btn:hover{transform:translateY(-4px) scale(1.04);box-shadow:0 18px 40px rgba(192,22,22,0.26);filter:saturate(1.08)}
+.card-btn.paid-btn{background:#9b1a1a}
+.card-btn.paid-btn:hover{transform:translateY(-4px) scale(1.02);box-shadow:0 14px 34px rgba(160,20,20,0.22)}
+
+/* CREATE screen: two-column grid */
+.create-screen{width:100vw;min-height:calc(100vh - 100px);background:var(--bg);display:flex;align-items:flex-start;justify-content:center;padding:28px 20px;box-sizing:border-box}
+.create-inner.two-column{width:min(1100px,96%);display:grid;grid-template-columns:1.8fr 1fr;grid-auto-rows:min-content;gap:18px;align-items:start}
+.card-a{background:var(--panel);border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:12px}
+.card-b{background:var(--panel);border:1px solid rgba(255,255,255,0.04);padding:18px;border-radius:12px;height:100%}
+
+/* Card A specifics */
+.card-a-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.label{color:rgba(255,255,255,0.9);font-weight:700}
+.remaining{color:rgba(255,255,255,0.9);font-size:14px}
+.input-bookname{width:100%;resize:vertical;min-height:56px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);color:#fff;padding:10px;border-radius:8px;font-size:16px;outline:none}
+.input-bookname:focus{box-shadow:0 8px 30px rgba(0,0,0,0.6);border-color:rgba(255,255,255,0.12)}
+.ghost-btn.small{background:transparent;border:1px solid rgba(255,255,255,0.06);padding:8px 10px;border-radius:8px;color:#fff;cursor:pointer}
+
+/* Card B controls */
+.card-b-title{margin:0 0 10px 0;font-size:18px}
+.control-row{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.control-row label{font-weight:700;color:#fff;font-size:14px}
+.control-select{padding:8px 10px;background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.06);color:#fff;border-radius:8px}
+
+/* TIMING PRESETS (segmented control) */
+.timing-presets { display:flex; gap:8px; flex-wrap:wrap; }
+.preset-btn {
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  align-items:center;
+  justify-content:center;
+  padding:8px 10px;
+  border-radius:10px;
+  background: rgba(255,255,255,0.02);
   color: #fff;
-  border: none;
-  border-radius: 10px;
-  font-weight: 700;
-  cursor: pointer;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  box-shadow: 0 6px 22px rgba(139,23,23,0.14), inset 0 -3px 0 rgba(0,0,0,0.06);
-  transition: transform 140ms ease, filter 140ms ease, opacity 200ms ease;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: auto; /* ensure buttons accept pointer events */
-}
-
-/* large center variant */
-.play-btn.large {
-  padding: 18px 46px;
-  font-size: 28px;
-  border-radius: 14px;
-  box-shadow: 0 14px 40px rgba(225,29,29,0.22), inset 0 -5px 0 rgba(0,0,0,0.08);
-}
-
-/* small scattered buttons */
-.play-btn.small {
-  padding: 0 10px;
-  font-size: 12px;
-  border-radius: 8px;
-  opacity: 0.95;
-  transition: transform 120ms ease, filter 120ms ease, opacity 120ms ease, box-shadow 120ms ease;
-}
-
-/* hover — visible when mouse over */
-.play-btn.small:hover {
-  transform: translateY(-6px) scale(1.06) rotate(0deg);
-  filter: brightness(1.06);
-  opacity: 1;
-  box-shadow: 0 10px 26px rgba(139,23,23,0.2);
-  cursor: pointer; /* pointer cursor on hover */
-}
-
-/* focus accessibility */
-.play-btn.small:focus {
-  outline: 2px solid rgba(255,255,255,0.12);
-  outline-offset: 3px;
-}
-
-/* clicked pulse (tiny scale) toggled via data attribute from JS */
-.play-btn.small[data-clicked="1"] {
-  transform: scale(0.95) translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
-}
-
-/* random layer */
-.random-layer {
-  position: absolute;
-  inset: 0;
-  z-index: 10;
-}
-
-/* blank screen after center click */
-.blank-screen {
-  width: 100vw;
-  height: 100vh;
-  background: #000;
-}
-
-/* small-screen tweak */
-@media (max-width: 420px) {
-  .play-btn.large { top: 62%; font-size: 20px; padding: 14px 30px; }
-}
-
-/* NEXT PAGE (FREE / PAID CARDS) */
-.next-screen {
-  width: 100vw;
-  height: 100vh;
-  background: #000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.card-container {
-  display: flex;
-  gap: 10px;
-}
-
-.card {
-  width: 300px;
-  height: 120px;
-  padding: 26px;
-  border: 2px solid white; /* white border */
-  border-radius: 12px;
-  text-align: center;
-  color: white;
-}
-
-.card-title {
-  font-size: 26px;
-  margin-bottom: 20px;
-}
-
-.card-btn {
-  background: #a72626;
-  color: white;
-  border: 50px ;
-  padding: 12px 24px;
-  font-size: 30px;
-  border-radius: 8px;
-  cursor: pointer;
-  margin-bottom: 14px;
-  transition: transform 0.15s ease, filter 0.15s ease;
-}
-
-.card-btn:hover {
-  transform: scale(1.05);
-  filter: brightness(1.1);
-}
-
-.card-description {
-  font-size: 13px;
-  line-height: 1.4;
-  opacity: 0.85;
-}
-
-/* ---------------------------
-   FREE SCREEN (floating texts)
-   --------------------------- */
-
-.free-screen {
-  width: 100vw;
-  height: 100vh;
-  background: #000;
-  position: relative;
-  overflow: hidden;
-}
-
-/* container that holds DOM nodes for floating texts */
-.free-float-container {
-  position: absolute;
-  inset: 0;
-  pointer-events: none; /* text floats should not block clicks */
-}
-
-/* floating text style */
-.float-text {
-  color: #fff;
-  background: rgba(255,255,255,0.03); /* subtle backdrop */
-  padding: 6px 10px;
-  border-radius: 8px;
   border: 1px solid rgba(255,255,255,0.04);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-  transform-origin: left top;
-  transition: transform 120ms linear;
-  opacity: 0.95;
-}
-
-/* bottom center Let's Go button */
-.free-bottom {
-  position: absolute;
-  left: 50%;
-  bottom: 36px;
-  transform: translateX(-50%);
-  z-index: 60;
-}
-
-/* base style already exists; ensure this is present or appended */
-
-.letsgo-btn {
-  background: #c01616;
-  color: white;
-  border: none;
-  padding: 12px 28px;
-  font-size: 18px;
-  font-weight: 700;
-  border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 12px 30px rgba(192,22,22,0.22), inset 0 -4px 0 rgba(0,0,0,0.08);
-  transition: transform 140ms ease, filter 140ms ease, opacity 360ms ease, transform 360ms ease;
-  opacity: 0;
-  transform: translateY(12px) scale(0.98);
-  pointer-events: none;
+  min-width: 58px;
+  transition: transform 140ms ease, box-shadow 140ms ease, background 140ms ease;
+  font-weight:700;
+}
+.preset-btn .preset-label { font-size:14px; }
+.preset-btn .preset-sub { font-size:10px; color:var(--muted-2); font-weight:600; }
+.preset-btn:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.45); background: rgba(255,255,255,0.03); }
+.preset-btn:focus { outline: 2px solid rgba(255,255,255,0.06); outline-offset: 3px; }
+
+/* active state */
+.preset-btn.active {
+  background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+  box-shadow: 0 14px 40px rgba(192,22,22,0.22);
+  border-color: rgba(255,255,255,0.08);
+  transform: translateY(0) scale(1.02);
 }
 
-/* visible state: fades up and becomes clickable */
-.letsgo-btn.show {
-  opacity: 1;
-  transform: translateY(0) scale(1);
-  pointer-events: auto;
+/* checkbox */
+.checkbox-row{display:flex;align-items:center}
+.checkbox-label{display:flex;align-items:center;gap:10px;cursor:pointer;color:#fff}
+.checkbox-label input{width:16px;height:16px}
+
+/* results panel below grid */
+.results-panel{grid-column:1 / -1;margin-top:6px}
+.result-card{background:var(--panel);border:1px solid rgba(255,255,255,0.04);padding:10px;border-radius:10px;margin-bottom:10px}
+.result-meta{color:rgba(255,255,255,0.55);font-size:12px;margin-bottom:6px}
+.result-text{color:#fff;font-size:15px;line-height:1.4}
+.result-options small{color:rgba(255,255,255,0.7)}
+
+/* buttons used in create area */
+.generate-btn{background:var(--accent-red);color:#fff;padding:10px 18px;border-radius:10px;border:none;font-weight:800;cursor:pointer}
+.generate-btn:disabled{opacity:0.45;cursor:not-allowed}
+
+/* PAID screen simple */
+.paid-screen{width:100vw;height:calc(100vh - 100px);display:flex;align-items:center;justify-content:center;background:var(--bg)}
+.paid-center{text-align:center}
+
+/* responsive: stack columns on small screens */
+@media (max-width:920px){
+  .create-inner.two-column{grid-template-columns:1fr;grid-auto-rows:auto}
+  .results-panel{grid-column:1}
+  .app-shell{padding-top:88px}
+  .brand .v,.brand .k{font-size:42px}
+  .brand .b,.brand .o-mid{font-size:28px;transform:translateY(3px)}
+  .brand .o-small{font-size:16px;transform:translateY(6px)}
 }
 
-/* hover when visible */
-.letsgo-btn.show:hover {
-  transform: translateY(-4px) scale(1.03);
-  filter: brightness(1.06);
-}
-
-/* ---------------------------
-   PAID SCREEN (simple)
-   --------------------------- */
-.paid-screen {
-  width: 100vw;
-  height: 100vh;
-  background: #000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.paid-center .card-btn {
-  background: #c01616;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  border: none;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-/* small responsive tweaks */
-@media (max-width: 520px) {
-  .float-text { font-size: 14px !important; padding: 6px 8px; }
-  .letsgo-btn { padding: 10px 20px; font-size: 16px; }
-  .card { width: 200px; padding: 18px; }
-}
-
-/* When floats align we rely on JS to place them.
-   These rules just ensure the visuals look clean. */
-
-.float-text {
-  color: #fff;
-  background: rgba(255,255,255,0.03);
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.04);
-  box-shadow: 0 8px 30px rgba(0,0,0,0.6);
-  white-space: nowrap;
-  pointer-events: none;
-  user-select: none;
-  transform-origin: left top;
-  transition: transform 160ms linear; /* small smoothing for direct DOM transform changes */
-  opacity: 0.98;
+/* Force dropdown OPTION text to be black */
+select.control-select option:checked{
+  color: #000 !important;
+  background:#fff !important;
 }
